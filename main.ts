@@ -99,8 +99,12 @@ export default class Xit extends Plugin {
                     : this.settings.repoUrl;
                 
                 // Execute git clone command
-                await exec(`cd "${vaultPath}" && git clone ${authUrl} .`);
-                
+                await exec(`cd "${vaultPath}" && git init`);
+                await exec(`cd "${vaultPath}" && git remote add origin ${authUrl}`);
+                await exec(`cd "${vaultPath}" && git fetch --all`);
+                await exec(`cd "${vaultPath}" && git reset --hard origin/main`);
+                await exec(`cd "${vaultPath}" && git clean -fd`); // Remove untracked files
+
                 new Notice('Git repository cloned successfully');
             } else {
                 // For web version, we'd need to implement with isomorphic-git
