@@ -27,20 +27,21 @@ export default class Xit extends Plugin {
         }
 
         // Add command to manually sync git repository
-        this.addCommand({
-            id: 'git-sync',
-            name: 'Sync Git repository',
-            callback: () => this.git.sync()
-        });
+        // this.addCommand({
+        //     id: 'git-sync',
+        //     name: 'Sync Git repository',
+        //     callback: () => this.git.sync()
+        // });
 
         // This adds a settings tab so the user can configure various aspects of the plugin
         this.addSettingTab(new SettingsTab(this.app, this));
 
         // When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-        // this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
+        this.registerInterval(window.setInterval(this.git.push, 60 * 1000));
     }
  
     onunload() {
+        this.git.push();
     }
 
     async loadSettings() {
