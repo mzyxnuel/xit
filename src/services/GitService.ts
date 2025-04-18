@@ -1,7 +1,8 @@
 import { Notice } from "obsidian";
 import { XitSettings } from "../types/XitSettings.types";
+import { GitAction } from "src/types/GitActions.types";
 
-export class GitService {
+export class GitService implements GitAction {
     private vaultPath: any;
     private settings: XitSettings;
     private util = require('this.util');
@@ -12,7 +13,7 @@ export class GitService {
         this.settings = settings;
     }
 
-    async clone() {
+    async clone(): Promise<void> {
         try {
                 // Set Git credentials if token is provided
                 const authUrl = this.settings.githubToken 
@@ -31,7 +32,7 @@ export class GitService {
         }
     }
 
-    async sync() {
+    async sync(): Promise<void> {
         try {
             // Set Git credentials if token is provided
             if (this.settings.githubToken) {
@@ -49,7 +50,7 @@ export class GitService {
         }
     }
 
-    async push() {
+    async push(): Promise<void> {
         try {
             // this.execute git commands
             await this.exec(`cd "${this.vaultPath}" && git add .`);
