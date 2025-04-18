@@ -3,11 +3,13 @@ import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Set
 interface XitSettings {
     githubToken: string;
     gitAutoSync: boolean;
+    repoUrl: string;
 }
 
 const DEFAULT_SETTINGS: XitSettings = {
     githubToken: '',
     gitAutoSync: true,
+    repoUrl: ''
 }
 
 export default class Xit extends Plugin {
@@ -37,6 +39,11 @@ export default class Xit extends Plugin {
 
     async gitSyncAtStartup() {
         try {
+            if(!this.settings.githubToken) {
+                new Notice('GitHub token is not set. Please configure it in the settings.');
+                return;
+            }
+
             new Notice('Syncing Git repository...');
             
             // Get the path to the vault
@@ -66,6 +73,42 @@ export default class Xit extends Plugin {
         } catch (error) {
             console.error('Error synchronizing git repository:', error);
             new Notice('Error synchronizing git repository: ' + error.message);
+        }
+    }
+
+    async gitCloneRepository() {
+        try {
+            if (!this.settings.repoUrl) {
+                new Notice('Please provide a repository URL in the settings');
+                return;
+            }
+
+            new Notice('Cloning Git repository...');
+            
+            // Get the path to the vault
+            const vaultPath = (this.app.vault.adapter as any).basePath;
+            
+            // Using Node.js capabilities for desktop version of Obsidian
+            if (typeof require === 'function') {
+                const util = require('util');
+                const exec = util.promisify(require('child_process').exec);
+                
+                // Set Git credentials if token is provided
+                const authUrl = this.settings.githubToken 
+                    ? this.settings.repoUrl.replace('https://', `https://x-access-token:${this.settings.githubToken}@`)
+                    : this.settings.repoUrl;
+                
+                // Execute git clone command
+                await exec(`cd "${vaultPath}" && git clone ${authUrl} .`);
+                
+                new Notice('Git repository cloned successfully');
+            } else {
+                // For web version, we'd need to implement with isomorphic-git
+                throw new Error('Git operations in web version are not implemented yet');
+            }
+        } catch (error) {
+            console.error('Error cloning git repository:', error);
+            new Notice('Error cloning git repository: ' + error.message);
         }
     }
 
@@ -104,6 +147,7 @@ class SampleSettingTab extends PluginSettingTab {
 					this.plugin.settings.githubToken = value;
 					await this.plugin.saveSettings();
 				}));
+        
                 
         new Setting(containerEl)
             .setName('Auto Sync Git Repository')
@@ -114,5 +158,26 @@ class SampleSettingTab extends PluginSettingTab {
                     this.plugin.settings.gitAutoSync = value;
                     await this.plugin.saveSettings();
                 }));
+
+        const repoSetting = new Setting(containerEl)
+            .setName('Repository URL')
+            .setDesc('URL of the Git repository to clone (e.g., https://github.com/username/repo.git)')
+            .addText(text => text
+                .setPlaceholder('https://github.com/username/repo.git')
+                .setValue(this.plugin.settings.repoUrl)
+                .onChange(async (value) => {
+                    this.plugin.settings.repoUrl = value;
+                    await this.plugin.saveSettings();
+                }));
+
+        // Add a button to clone the repository
+        repoSetting.addButton(button => {
+            button
+                .setButtonText('Clone Repository')
+                .setClass('mod-cta')
+                .onClick(() => {
+                    this.plugin.gitCloneRepository();
+                });
+        });
     }
 }

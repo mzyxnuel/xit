@@ -4,7 +4,7 @@
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "Git Obsidian plugin to sync your notes with a git repository.",
-	"author": "mzyxnueò",
+	"author": "mzyxnuel",
 	"authorUrl": "https://github.com/mzyxnuel",
 	"fundingUrl": "https://github.com/mzyxnuel",
 	"isDesktopOnly": false
