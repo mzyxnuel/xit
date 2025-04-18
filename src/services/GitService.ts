@@ -1,5 +1,5 @@
-import { Notice, Plugin } from "obsidian";
-import { XitSettings } from "./types/XitSettings.types";
+import { Notice } from "obsidian";
+import { XitSettings } from "../types/XitSettings.types";
 
 export class GitService {
     private vaultPath: any;
@@ -33,7 +33,7 @@ export class GitService {
                 await exec(`cd "${this.vaultPath}" && git init`);
                 await exec(`cd "${this.vaultPath}" && git remote add origin ${authUrl}`);
                 await exec(`cd "${this.vaultPath}" && git fetch --all`);
-                await exec(`cd "${this.vaultPath}" && git reset --hard origin/main`);
+                await exec(`cd "${this.vaultPath}" && git reset --hard origin/${this.settings.branchName}`);
                 await exec(`cd "${this.vaultPath}" && git clean -fd`); // Remove untracked files
 
                 new Notice('Git repository cloned successfully');
@@ -69,7 +69,7 @@ export class GitService {
                 
                 // Execute git commands
                 await exec(`cd "${this.vaultPath}" && git fetch --all`);
-                await exec(`cd "${this.vaultPath}" && git reset --hard origin/main`);
+                await exec(`cd "${this.vaultPath}" && git reset --hard origin/${this.settings.branchName}`);
                 await exec(`cd "${this.vaultPath}" && git clean -fd`);
                 
                 new Notice('Git repository synchronized successfully');
@@ -100,7 +100,7 @@ export class GitService {
                 // Execute git commands
                 await exec(`cd "${this.vaultPath}" && git add .`);
                 await exec(`cd "${this.vaultPath}" && git commit -m "vault sync ${new Date().toISOString()}"`);
-                await exec(`cd "${this.vaultPath}" && git push origin main`);
+                await exec(`cd "${this.vaultPath}" && git push origin ${this.settings.branchName}`);
                 
                 new Notice('Changes pushed to Git repository successfully');
             } else {
