@@ -82,4 +82,34 @@ export class GitService {
             new Notice('Error synchronizing git repository: ' + error.message);
         }
     }
+
+    async push() {
+        try {
+            if(!this.settings.githubToken) {
+                new Notice('GitHub token is not set. Please configure it in the settings.');
+                return;
+            }
+
+            new Notice('Pushing to Git repository...');
+            
+            // Using Node.js capabilities for desktop version of Obsidian
+            if (typeof require === 'function') {
+                const util = require('util');
+                const exec = util.promisify(require('child_process').exec);
+                
+                // Execute git commands
+                await exec(`cd "${this.vaultPath}" && git add .`);
+                await exec(`cd "${this.vaultPath}" && git commit -m "vault sync ${new Date().toISOString()}"`);
+                await exec(`cd "${this.vaultPath}" && git push origin main`);
+                
+                new Notice('Changes pushed to Git repository successfully');
+            } else {
+                // For web version, we'd need to implement with isomorphic-git
+                throw new Error('Git operations in web version are not implemented yet');
+            }
+        } catch (error) {
+            console.error('Error pushing to git repository:', error);
+            new Notice('Error pushing to git repository: ' + error.message);
+        }
+    }
 }
