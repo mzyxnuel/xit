@@ -1,17 +1,7 @@
-import { App, Plugin, PluginSettingTab, Setting } from 'obsidian';
-import { GitService } from 'src/GitService';
-
-interface XitSettings {
-    githubToken: string;
-    gitAutoSync: boolean;
-    repoUrl: string;
-}
-
-const DEFAULT_SETTINGS: XitSettings = {
-    githubToken: '',
-    gitAutoSync: true,
-    repoUrl: ''
-}
+import { Plugin } from 'obsidian';
+import { GitService } from 'src/services/GitService';
+import { DEFAULT_SETTINGS, XitSettings } from 'src/types/XitSettings.types';
+import { SettingsTab } from 'src/views/SettingTab';
 
 export default class Xit extends Plugin {
     settings: XitSettings;
@@ -53,60 +43,3 @@ export default class Xit extends Plugin {
     }
 }
 
-class SettingsTab extends PluginSettingTab {
-    plugin: Xit;
-
-    constructor(app: App, plugin: Xit) {
-        super(app, plugin);
-        this.plugin = plugin;
-    }
-
-    display(): void {
-        const {containerEl} = this;
-
-        containerEl.empty();
-
-		new Setting(containerEl)
-			.setName('GitHub Token')
-			.setDesc('Personal access token for GitHub authentication')
-			.addText(text => text
-				.setPlaceholder('ghp_xxxxxxxxxxxxxxxxxxxx')
-				.setValue(this.plugin.settings.githubToken)
-				.onChange(async (value) => {
-					this.plugin.settings.githubToken = value;
-					await this.plugin.saveSettings();
-				}));
-        
-                
-        new Setting(containerEl)
-            .setName('Auto Sync Git Repository')
-            .setDesc('Automatically synchronize Git repository at startup')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.gitAutoSync)
-                .onChange(async (value) => {
-                    this.plugin.settings.gitAutoSync = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        const repoSetting = new Setting(containerEl)
-            .setName('Repository URL')
-            .setDesc('URL of the Git repository to clone (e.g., https://github.com/username/repo.git)')
-            .addText(text => text
-                .setPlaceholder('https://github.com/username/repo.git')
-                .setValue(this.plugin.settings.repoUrl)
-                .onChange(async (value) => {
-                    this.plugin.settings.repoUrl = value;
-                    await this.plugin.saveSettings();
-                }));
-
-        // Add a button to clone the repository
-        repoSetting.addButton(button => {
-            button
-                .setButtonText('Clone Repository')
-                .setClass('mod-cta')
-                .onClick(() => {
-                    this.plugin.git.clone();
-                });
-        });
-    }
-}
