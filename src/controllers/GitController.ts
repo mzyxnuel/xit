@@ -1,14 +1,17 @@
 import { Notice } from "obsidian";
 import { XitSettings } from "../types/XitSettings.types";
 import { GitService } from "src/services/GitService";
+import { IsomorphicGitService } from "src/services/IsomorphicGitService";
 
 export class GitController {
     private settings: XitSettings;
     private desktop: GitService;
+    private mobile: IsomorphicGitService;
 
     constructor(vaultPath: any, settings: XitSettings) {
         this.settings = settings;
         this.desktop = new GitService(vaultPath, settings);
+        this.mobile = new IsomorphicGitService(vaultPath, settings);
     }
 
     async guard() {
@@ -53,7 +56,7 @@ export class GitController {
             if (typeof require === 'function') {
                 this.desktop.sync();
             } else {
-
+                await this.mobile.sync();
             }
 
             new Notice('Git repository synchronized successfully');
