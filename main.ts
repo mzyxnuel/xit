@@ -17,11 +17,11 @@ export default class Xit extends Plugin {
         }
 
         // Add command to manually sync git repository
-        // this.addCommand({
-        //     id: 'git-sync',
-        //     name: 'Sync Git repository',
-        //     callback: () => this.git.sync()
-        // });
+        this.addCommand({
+            id: 'xit-push',
+            name: 'Push to Git',
+            callback: () => this.git.push()
+        });
 
         // This adds a settings tab so the user can configure various aspects of the plugin
         this.addSettingTab(new SettingsTab(this.app, this));
