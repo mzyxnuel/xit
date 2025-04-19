@@ -6,24 +6,25 @@ export class IsomorphicGitService implements GitActions {
     private settings: XitSettings;
     private git: any;
     private http: any;
-    private LightningFS: any;
     private fs: any;
 
     constructor(vaultPath: any, settings: XitSettings) {
         this.vaultPath = vaultPath;
         this.settings = settings;
         
-        // Set up Buffer polyfill for browser environments
+        this.build()
+    }
+
+    private build = async () => {
         if (typeof window !== 'undefined' && typeof window.Buffer === 'undefined') {
             // @ts-ignore
-            window.Buffer = require('buffer').Buffer;
+            window.Buffer = await import('buffer/').Buffer;
         }
-        
-        // Import libraries after Buffer is defined
-        this.git = require('isomorphic-git');
-        this.http = require('isomorphic-git/http/web');
-        this.LightningFS = require('@isomorphic-git/lightning-fs');
-        this.fs = new this.LightningFS('obsidian-git-fs');
+
+        this.git = await import('isomorphic-git');
+        this.http = await import('isomorphic-git/http/web');
+        const LightningFS = await import('@isomorphic-git/lightning-fs');
+        this.fs = new LightningFS('obsidian-git-fs');
     }
 
     private onAuth = () => ({
