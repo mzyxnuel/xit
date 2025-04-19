@@ -6,7 +6,7 @@ export class GitService implements GitActions {
     private vaultPath: any;
     private settings: XitSettings;
     private util = require('util');
-    private exec = this.util.promisify(require('child_process').this.exec);
+    private exec = this.util.promisify(require('child_process').exec);
 
     constructor(vaultPath: any, settings: XitSettings) {
         this.vaultPath = vaultPath;
