@@ -24,7 +24,6 @@ export class SettingsTab extends PluginSettingTab {
 					this.plugin.settings.githubToken = value;
 					await this.plugin.saveSettings();
 				}));
-        
                 
         new Setting(containerEl)
             .setName('Auto Sync Git Repository')

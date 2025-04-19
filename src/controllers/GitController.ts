@@ -36,7 +36,7 @@ export class GitController {
             if (typeof require === 'function') {
                 this.desktop.clone();
             } else {
-                
+                await this.mobile.clone();
             }
 
             new Notice('Git repository cloned successfully');
@@ -76,7 +76,7 @@ export class GitController {
             if (typeof require === 'function') {
                 this.desktop.push();
             } else {
-
+                this.mobile.push();
             }
 
             new Notice('Changes pushed to Git repository successfully');
