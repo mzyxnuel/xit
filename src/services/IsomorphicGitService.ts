@@ -20,7 +20,51 @@ export class IsomorphicGitService implements GitActions {
     });
     
     async clone(): Promise<void> {
-        
+        try {
+            // Clear the directory first (if it exists and has files)
+            try {
+                const files = await this.fs.promises.readdir(this.vaultPath);
+                
+                // Only proceed with deletion if the directory is not empty
+                // and doesn't have a .git folder (indicating it's already a repo)
+                if (files.length > 0 && !files.includes('.git')) {
+                    for (const file of files) {
+                        const filepath = `${this.vaultPath}/${file}`;
+                        const stats = await this.fs.promises.lstat(filepath);
+                        
+                        if (stats.isDirectory()) {
+                            await this.fs.promises.rm(filepath, { 
+                                recursive: true, 
+                                force: true 
+                            });
+                        } else {
+                            await this.fs.promises.unlink(filepath);
+                        }
+                    }
+                }
+            } catch (error) {
+                // Directory might not exist yet, which is fine
+                await this.fs.promises.mkdir(this.vaultPath, { recursive: true });
+            }
+            
+            // Clone the repository
+            await this.git.clone({
+                fs: this.fs,
+                http: this.http,
+                dir: this.vaultPath,
+                url: this.settings.repoUrl,
+                ref: this.settings.branchName,
+                singleBranch: true,
+                depth: 1,
+                onAuth: this.onAuth,
+                corsProxy: window.location.origin + '/cors-proxy', // Optional: may need CORS proxy for web version
+                noTags: true,
+                noCheckout: false
+            });
+        } catch (error) {
+            console.error('Error cloning repository:', error);
+            throw error;
+        }
     }
 
     async sync(): Promise<void> {        
