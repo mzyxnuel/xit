@@ -1,8 +1,7 @@
 import { Plugin } from 'obsidian';
-import { GitController } from 'src/controllers/GitController';
-import { GitService } from 'src/services/GitService';
-import { DEFAULT_SETTINGS, XitSettings } from 'src/types/XitSettings.types';
-import { SettingsTab } from 'src/views/SettingTab';
+import { GitController } from './controllers/GitController';
+import { DEFAULT_SETTINGS, XitSettings } from './types/XitSettings.types';
+import { SettingsTab } from './views/SettingTab';
 
 export default class Xit extends Plugin {
     settings: XitSettings;
