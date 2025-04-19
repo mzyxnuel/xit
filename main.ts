@@ -1,15 +1,16 @@
 import { Plugin } from 'obsidian';
+import { GitController } from 'src/controllers/GitController';
 import { GitService } from 'src/services/GitService';
 import { DEFAULT_SETTINGS, XitSettings } from 'src/types/XitSettings.types';
 import { SettingsTab } from 'src/views/SettingTab';
 
 export default class Xit extends Plugin {
     settings: XitSettings;
-    git: GitService;
+    git: GitController;
 
     async onload() {
         await this.loadSettings();
-        this.git = new GitService((this.app.vault.adapter as any).basePath, this.settings);
+        this.git = new GitController((this.app.vault.adapter as any).basePath, this.settings);
 
         // Sync git repository at startup if enabled
         if (this.settings.gitAutoSync) {
