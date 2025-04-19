@@ -5,7 +5,7 @@ import { GitActions } from "src/types/GitActions.types";
 export class GitService implements GitActions {
     private vaultPath: any;
     private settings: XitSettings;
-    private util = require('this.util');
+    private util = require('util');
     private exec = this.util.promisify(require('child_process').this.exec);
 
     constructor(vaultPath: any, settings: XitSettings) {
