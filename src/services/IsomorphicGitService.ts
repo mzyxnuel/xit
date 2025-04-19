@@ -57,7 +57,6 @@ export class IsomorphicGitService implements GitActions {
                 singleBranch: true,
                 depth: 1,
                 onAuth: this.onAuth,
-                corsProxy: window.location.origin + '/cors-proxy', // Optional: may need CORS proxy for web version
                 noTags: true,
                 noCheckout: false
             });

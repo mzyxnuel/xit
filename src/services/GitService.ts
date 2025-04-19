@@ -20,7 +20,7 @@ export class GitService implements GitActions {
                     ? this.settings.repoUrl.replace('https://', `https://x-access-token:${this.settings.githubToken}@`)
                     : this.settings.repoUrl;
                 
-                // this.execute git clone command
+                // execute git clone command
                 await this.exec(`cd "${this.vaultPath}" && git init`);
                 await this.exec(`cd "${this.vaultPath}" && git remote add origin ${authUrl}`);
                 await this.exec(`cd "${this.vaultPath}" && git fetch --all`);
@@ -40,7 +40,7 @@ export class GitService implements GitActions {
                 await this.exec(`cd "${this.vaultPath}" && git config --local credential.helper '!f() { echo "username=x-access-token"; echo "password=${this.settings.githubToken}"; }; f'`);
             }
             
-            // this.execute git commands
+            // execute git commands
             await this.exec(`cd "${this.vaultPath}" && git fetch --all`);
             await this.exec(`cd "${this.vaultPath}" && git reset --hard origin/${this.settings.branchName}`);
             await this.exec(`cd "${this.vaultPath}" && git clean -fd`);
@@ -52,7 +52,7 @@ export class GitService implements GitActions {
 
     async push(): Promise<void> {
         try {
-            // this.execute git commands
+            // execute git commands
             await this.exec(`cd "${this.vaultPath}" && git add .`);
             await this.exec(`cd "${this.vaultPath}" && git commit -m "vault sync ${new Date().toISOString()}"`);
             await this.exec(`cd "${this.vaultPath}" && git push origin ${this.settings.branchName}`);
