@@ -5,24 +5,22 @@ import { IsomorphicGitService } from "../services/IsomorphicGitService";
 
 export class GitController {
     private settings: XitSettings;
-    private desktop: GitService;
-    private mobile: IsomorphicGitService;
+    private vaultPath: any;
 
     constructor(vaultPath: any, settings: XitSettings) {
         this.settings = settings;
-        this.desktop = new GitService(vaultPath, settings);
-        this.mobile = new IsomorphicGitService(vaultPath, settings);
+        this.vaultPath = vaultPath;
     }
 
-    async guard() {
+    private guard(): void {
         if(!this.settings.githubToken) {
             new Notice('GitHub token is not set. Please configure it in the settings.');
-            return;
+            throw new Error('GitHub token is not set');
         }
 
         if (!this.settings.repoUrl) {
             new Notice('Please provide a repository URL in the settings');
-            return;
+            throw new Error('Repository URL is not set');
         }
     }
 
@@ -34,9 +32,9 @@ export class GitController {
             
             // Using Node.js capabilities for desktop version of Obsidian
             if (typeof require === 'function') {
-                this.desktop.clone();
+                await new GitService(this.vaultPath, this.settings).clone();
             } else {
-                await this.mobile.clone();
+                await new IsomorphicGitService(this.vaultPath, this.settings).clone();
             }
 
             new Notice('Git repository cloned successfully');
@@ -54,9 +52,9 @@ export class GitController {
             
             // Using Node.js capabilities for desktop version of Obsidian
             if (typeof require === 'function') {
-                this.desktop.sync();
+                await new GitService(this.vaultPath, this.settings).sync();
             } else {
-                await this.mobile.sync();
+                await new IsomorphicGitService(this.vaultPath, this.settings).sync();
             }
 
             new Notice('Git repository synchronized successfully');
@@ -74,9 +72,9 @@ export class GitController {
             
             // Using Node.js capabilities for desktop version of Obsidian
             if (typeof require === 'function') {
-                this.desktop.push();
+                await new GitService(this.vaultPath, this.settings).push();
             } else {
-                this.mobile.push();
+                await new IsomorphicGitService(this.vaultPath, this.settings).push();
             }
 
             new Notice('Changes pushed to Git repository successfully');
