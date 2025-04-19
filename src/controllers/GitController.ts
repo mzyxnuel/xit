@@ -15,13 +15,13 @@ export class GitController {
     }
 
     async guard() {
-        if (!this.settings.repoUrl) {
-            new Notice('Please provide a repository URL in the settings');
+        if(!this.settings.githubToken) {
+            new Notice('GitHub token is not set. Please configure it in the settings.');
             return;
         }
 
-        if(!this.settings.githubToken) {
-            new Notice('GitHub token is not set. Please configure it in the settings.');
+        if (!this.settings.repoUrl) {
+            new Notice('Please provide a repository URL in the settings');
             return;
         }
     }
