@@ -1,7 +1,7 @@
 import { Notice } from "obsidian";
 import { XitSettings } from "../types/XitSettings.types";
-import { GitService } from "src/services/GitService";
-import { IsomorphicGitService } from "src/services/IsomorphicGitService";
+import { GitService } from "../services/GitService";
+import { IsomorphicGitService } from "../services/IsomorphicGitService";
 
 export class GitController {
     private settings: XitSettings;

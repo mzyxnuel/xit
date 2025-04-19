@@ -1,6 +1,6 @@
 import { Notice } from "obsidian";
 import { XitSettings } from "../types/XitSettings.types";
-import { GitActions } from "src/types/GitActions.types";
+import { GitActions } from "../types/GitActions.types";
 
 export class GitService implements GitActions {
     private vaultPath: any;
