@@ -16,14 +16,27 @@ export class IsomorphicGitService implements GitActions {
     }
 
     private build = async () => {
+        // Check if running in a browser-like environment and if Buffer is not globally available
         if (typeof window !== 'undefined' && typeof window.Buffer === 'undefined') {
-            // @ts-ignore
-            window.Buffer = await import('buffer/').Buffer;
+            try {
+                const bufferModule = await import('buffer');
+                // @ts-ignore - Allow assigning to window
+                window.Buffer = bufferModule.Buffer;
+            } catch (error) {
+                console.error("Failed to load 'buffer' module dynamically:", error);
+                throw error;
+            }
         }
 
-        this.git = await import('isomorphic-git');
-        this.http = await import('isomorphic-git/http/web');
-        const LightningFS = await import('@isomorphic-git/lightning-fs');
+        const gitModule = await import('isomorphic-git');
+        const httpModule = await import('isomorphic-git/http/web');
+        const lightningFSModule = await import('@isomorphic-git/lightning-fs');
+        
+        // Access the default exports with type assertion
+        this.git = gitModule.default;
+        this.http = httpModule.default;
+        const LightningFS = (lightningFSModule as any).default;
+        
         this.fs = new LightningFS('obsidian-git-fs');
     }
 
