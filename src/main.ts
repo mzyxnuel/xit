@@ -26,7 +26,7 @@ export default class Xit extends Plugin {
             this.addSettingTab(new SettingsTab(this.app, this));
     
             // When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-            this.registerInterval(window.setInterval(this.git.push, 60 * 1000));
+            this.registerInterval(window.setInterval(() => this.git.push(), 60 * 1000));
         } catch (error) {
             console.error('Error loading Xit plugin:', error);
             new Notice('Error loading Xit plugin: ' + error.message);
