@@ -1,8 +1,8 @@
 import { Notice } from "obsidian";
 import { XitSettings } from "../types/XitSettings.types";
-import { GitAction } from "src/types/GitActions.types";
+import { GitActions } from "src/types/GitActions.types";
 
-export class IsomorphicGitService implements GitAction {
+export class IsomorphicGitService implements GitActions {
     private vaultPath: any;
     private settings: XitSettings;
 
