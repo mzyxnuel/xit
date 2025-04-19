@@ -12,7 +12,7 @@ export class GitController {
         this.vaultPath = vaultPath;
     }
 
-    private guard(): void {
+    private guard = (): void => {
         if(!this.settings.githubToken) {
             new Notice('GitHub token is not set. Please configure it in the settings.');
             throw new Error('GitHub token is not set');
