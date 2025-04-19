@@ -24,16 +24,6 @@ export class SettingsTab extends PluginSettingTab {
 					this.plugin.settings.githubToken = value;
 					await this.plugin.saveSettings();
 				}));
-                
-        new Setting(containerEl)
-            .setName('Auto Sync Git Repository')
-            .setDesc('Automatically synchronize Git repository at startup')
-            .addToggle(toggle => toggle
-                .setValue(this.plugin.settings.gitAutoSync)
-                .onChange(async (value) => {
-                    this.plugin.settings.gitAutoSync = value;
-                    await this.plugin.saveSettings();
-                }));
 
         new Setting(containerEl)
             .setName('Branch Name')
