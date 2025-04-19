@@ -1,7 +1,8 @@
-import { Notice } from "obsidian";
+import { Notice, Platform } from "obsidian";
 import { XitSettings } from "../types/XitSettings.types";
 import { GitService } from "../services/GitService";
 import { IsomorphicGitService } from "../services/IsomorphicGitService";
+import { GitActions } from "src/types/GitActions.types";
 
 export class GitController {
     private settings: XitSettings;
@@ -24,18 +25,19 @@ export class GitController {
         }
     }
 
+    private service(): GitActions {
+        return Platform.isDesktopApp 
+            ? new GitService(this.vaultPath, this.settings) 
+            : new IsomorphicGitService(this.vaultPath, this.settings);
+    }
+
     async clone() {
         try {
             this.guard();
 
             new Notice('Cloning Git repository...');
-            
-            // Using Node.js capabilities for desktop version of Obsidian
-            if (typeof require === 'function') {
-                await new GitService(this.vaultPath, this.settings).clone();
-            } else {
-                await new IsomorphicGitService(this.vaultPath, this.settings).clone();
-            }
+
+            this.service().clone();
 
             new Notice('Git repository cloned successfully');
         } catch (error) {
@@ -51,11 +53,7 @@ export class GitController {
             new Notice('Syncing Git repository...');
             
             // Using Node.js capabilities for desktop version of Obsidian
-            if (typeof require === 'function') {
-                await new GitService(this.vaultPath, this.settings).sync();
-            } else {
-                await new IsomorphicGitService(this.vaultPath, this.settings).sync();
-            }
+            this.service().sync();
 
             new Notice('Git repository synchronized successfully');
         } catch (error) {
@@ -70,12 +68,7 @@ export class GitController {
 
             new Notice('Pushing to Git repository...');
             
-            // Using Node.js capabilities for desktop version of Obsidian
-            if (typeof require === 'function') {
-                await new GitService(this.vaultPath, this.settings).push();
-            } else {
-                await new IsomorphicGitService(this.vaultPath, this.settings).push();
-            }
+            this.service().push();
 
             new Notice('Changes pushed to Git repository successfully');
         } catch (error) {
