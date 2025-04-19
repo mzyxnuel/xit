@@ -1,59 +1,54 @@
-import { Notice } from "obsidian";
 import { XitSettings } from "../types/XitSettings.types";
 import { GitActions } from "src/types/GitActions.types";
 
 export class IsomorphicGitService implements GitActions {
     private vaultPath: any;
     private settings: XitSettings;
+    private git = require('isomorphic-git');
+    private http = require('isomorphic-git/http/web');
+    private LightningFS = require('@isomorphic-git/lightning-fs');
+    private fs = new this.LightningFS('obsidian-git-fs');
 
     constructor(vaultPath: any, settings: XitSettings) {
         this.vaultPath = vaultPath;
         this.settings = settings;
     }
+
+    private onAuth = () => ({
+        username: 'x-access-token',
+        password: this.settings.githubToken
+    });
     
     async clone(): Promise<void> {
         
     }
 
-    async sync(): Promise<void> {
-        // Import required modules - make sure to add these to your package.json
-        const git = require('isomorphic-git');
-        const http = require('isomorphic-git/http/web');
-        
-        const LightningFS = require('@isomorphic-git/lightning-fs');
-        const fs = new LightningFS('obsidian-git-fs');
-        
-        // Authentication for GitHub
-        const onAuth = () => ({
-            username: 'x-access-token',
-            password: this.settings.githubToken
-        });
-        
+    async sync(): Promise<void> {        
         // Fetch latest
-        await git.fetch({
-            fs,
-            http,
+        await this.git.fetch({
+            fs: this.fs,
+            http: this.http,
             dir: this.vaultPath,
             url: this.settings.repoUrl,
             ref: this.settings.branchName,
             depth: 1,
             singleBranch: true,
             tags: false,
-            onAuth
+            onAuth: this.onAuth
         });
         
         // Get current branch 
         try {
-            await git.checkout({
-                fs,
+            await this.git.checkout({
+                fs: this.fs,
                 dir: this.vaultPath,
                 ref: this.settings.branchName,
                 force: true
             });
         } catch (e) {
             // If checking current branch fails, force checkout
-            await git.checkout({
-                fs,
+            await this.git.checkout({
+                fs: this.fs,
                 dir: this.vaultPath,
                 ref: this.settings.branchName,
                 force: true
@@ -62,23 +57,23 @@ export class IsomorphicGitService implements GitActions {
         
         // Get latest commit from remote branch
         const remoteRef = `refs/remotes/origin/${this.settings.branchName}`;
-        const latestCommit = await git.resolveRef({
-            fs,
+        const latestCommit = await this.git.resolveRef({
+            fs: this.fs,
             dir: this.vaultPath,
             ref: remoteRef
         });
         
         // Reset to latest commit (equivalent to reset --hard)
-        await git.reset({
-            fs,
+        await this.git.reset({
+            fs: this.fs,
             dir: this.vaultPath,
             ref: latestCommit,
             hard: true
         });
         
         // Clean untracked files (similar to git clean -fd)
-        const statusMatrix = await git.statusMatrix({
-            fs,
+        const statusMatrix = await this.git.statusMatrix({
+            fs: this.fs,
             dir: this.vaultPath,
             patterns: ['.']
         });
@@ -87,15 +82,15 @@ export class IsomorphicGitService implements GitActions {
         for (const [filepath, headStatus] of statusMatrix) {
             if (headStatus === 0) { // untracked file
                 try {
-                    const stats = await fs.promises.lstat(`${this.vaultPath}/${filepath}`);
+                    const stats = await this.fs.promises.lstat(`${this.vaultPath}/${filepath}`);
                     
                     if (stats.isDirectory()) {
-                        await fs.promises.rm(`${this.vaultPath}/${filepath}`, { 
+                        await this.fs.promises.rm(`${this.vaultPath}/${filepath}`, { 
                             recursive: true, 
                             force: true 
                         });
                     } else {
-                        await fs.promises.unlink(`${this.vaultPath}/${filepath}`);
+                        await this.fs.promises.unlink(`${this.vaultPath}/${filepath}`);
                     }
                 } catch (e) {
                     console.log(`Could not remove untracked file: ${filepath}`, e);
@@ -105,6 +100,51 @@ export class IsomorphicGitService implements GitActions {
     }
 
     async push(): Promise<void> {
-        
+        try {
+            // Add all changes
+            await this.git.add({
+                fs: this.fs,
+                dir: this.vaultPath,
+                filepath: '.'
+            });
+            
+            // Create commit
+            const commitMessage = `vault sync ${new Date().toISOString()}`;
+            
+            // Get status to check if there are changes to commit
+            const status = await this.git.status({
+                fs: this.fs,
+                dir: this.vaultPath,
+                filepath: '.'
+            });
+            
+            if (status !== 'unmodified') {
+                // Create commit with message
+                await this.git.commit({
+                    fs: this.fs,
+                    dir: this.vaultPath,
+                    message: commitMessage,
+                    author: {
+                        name: 'Obsidian Git',
+                        email: 'obsidian@example.com'
+                    }
+                });
+                
+                // Push to remote
+                await this.git.push({
+                    fs: this.fs,
+                    http: this.http,
+                    dir: this.vaultPath,
+                    remote: 'origin',
+                    ref: this.settings.branchName,
+                    onAuth: this.onAuth
+                });
+            } else {
+                console.log('No changes to commit');
+            }
+        } catch (error) {
+            console.error('Error pushing changes:', error);
+            throw error;
+        }
     }
 }
