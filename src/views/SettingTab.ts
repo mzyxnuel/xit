@@ -50,7 +50,7 @@ export class SettingsTab extends PluginSettingTab {
         // Add a button to clone the repository
         repoSetting.addButton(button => {
             button
-                .setButtonText('Clone Repository')
+                .setButtonText('Clone/Sync Repository')
                 .setClass('mod-cta')
                 .onClick(() => {
                     this.plugin.git.clone();
