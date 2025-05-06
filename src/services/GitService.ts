@@ -37,7 +37,7 @@ export class GitService implements GitActions {
             // Set Git credentials if token is provided
             if (this.settings.githubToken) {
                 // Configure Git to use the token for HTTPS authentication
-                await this.exec(`cd "${this.vaultPath}" && git config --local credential.helper '!f() { echo "username=x-access-token"; echo "password=${this.settings.githubToken}"; }; f'`);
+                await this.exec(`cd "${this.vaultPath}" && git config --local credential.helper "!f() { echo username=x-access-token; echo password=${this.settings.githubToken}; }; f"`);
             }
             
             // execute git commands
