@@ -19,7 +19,7 @@ export default class Xit extends Plugin {
             this.addCommand({
                 id: 'xit-push',
                 name: 'Push to Git',
-                callback: () => this.git.push()
+                callback: () => this.git.push(true)
             });
     
             // This adds a settings tab so the user can configure various aspects of the plugin

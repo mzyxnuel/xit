@@ -14,7 +14,7 @@ export class GitController {
     }
 
     private guard = (): void => {
-        if(!this.settings.githubToken) {
+        if (!this.settings.githubToken) {
             new Notice('GitHub token is not set. Please configure it in the settings.');
             throw new Error('GitHub token is not set');
         }
@@ -62,15 +62,21 @@ export class GitController {
         }
     }
 
-    async push() {
+    async push(isManual: boolean = false) {
         try {
             this.guard();
 
-            new Notice('Pushing to Git repository...');
-            
+            const canNotice = (Platform.isMobileApp && isManual) || Platform.isDesktopApp
+
+            if (canNotice) {
+                new Notice('Pushing to Git repository...');    
+            }
+                        
             this.service().push();
 
-            new Notice('Changes pushed to Git repository successfully');
+            if (canNotice) {
+                new Notice('Changes pushed to Git repository successfully');
+            }
         } catch (error) {
             console.error('Error pushing to git repository:', error);
             new Notice('Error pushing to git repository: ' + error.message);
