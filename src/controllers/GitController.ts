@@ -52,7 +52,6 @@ export class GitController {
 
             new Notice('Syncing Git repository...');
             
-            // Using Node.js capabilities for desktop version of Obsidian
             this.service().sync();
 
             new Notice('Git repository synchronized successfully');
