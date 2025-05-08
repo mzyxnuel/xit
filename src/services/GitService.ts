@@ -55,7 +55,17 @@ export class GitService implements GitActions {
             // execute git commands
             await this.exec(`cd "${this.vaultPath}" && git add .`);
             await this.exec(`cd "${this.vaultPath}" && git commit -m "vault sync ${new Date().toISOString()}"`);
-            await this.exec(`cd "${this.vaultPath}" && git push origin ${this.settings.branchName}`);
+            
+            // Check if there are commits to push
+            const { stdout } = await this.exec(
+                `cd "${this.vaultPath}" && git rev-list HEAD --not --remotes=origin/${this.settings.branchName} --count`
+            );
+            
+            const unpushedCommitsCount = parseInt(stdout.trim());
+            if (unpushedCommitsCount > 0) {
+                await this.exec(`cd "${this.vaultPath}" && git push origin ${this.settings.branchName}`);
+            } 
+            
         } catch (error) {
             console.error('Error pushing to git repository:', error);
             new Notice('Error pushing to git repository: ' + error.message);
