@@ -56,5 +56,17 @@ export class SettingsTab extends PluginSettingTab {
                     this.plugin.git.clone();
                 });
         });
+
+        new Setting(containerEl)
+            .setName('Auto-commit Interval')
+            .setDesc('Time in minutes between automatic commits (set to 0 to disable auto-commit)')
+            .addText(text => text
+                .setPlaceholder('30')
+                .setValue(this.plugin.settings.autoCommitInterval ? String(this.plugin.settings.autoCommitInterval) : '0')
+                .onChange(async (value) => {
+                    const numValue = parseInt(value) || 0;
+                    this.plugin.settings.autoCommitInterval = numValue;
+                    await this.plugin.saveSettings();
+                }));
     }
 }

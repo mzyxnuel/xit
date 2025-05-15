@@ -21,7 +21,11 @@ export default class Xit extends Plugin {
                 name: 'Push to Git',
                 callback: () => this.git.push(true)
             });
-    
+
+            this.addRibbonIcon('arrow-up-from-line', 'Commit & Push', () => {
+                this.git.push(true);
+            });
+        
             // This adds a settings tab so the user can configure various aspects of the plugin
             this.addSettingTab(new SettingsTab(this.app, this));
     
