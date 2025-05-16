@@ -31,7 +31,6 @@ export class IsomorphicGitService implements GitActions {
         const gitModule = await import('isomorphic-git');
         const httpModule = await import('isomorphic-git/http/web');
         const lightningFSModule = await import('@isomorphic-git/lightning-fs');
-        cons
         
         // Access the default exports with type assertion
         this.git = gitModule.default;
