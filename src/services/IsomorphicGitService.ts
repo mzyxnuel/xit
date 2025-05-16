@@ -1,51 +1,79 @@
 import { XitSettings } from "../types/XitSettings.types";
 import { GitActions } from "../types/GitActions.types";
+import git from 'isomorphic-git';
+import type { AuthCallback, AuthFailureCallback, GitHttpRequest, GitHttpResponse, HttpClient } from "isomorphic-git";
+import { IsomorphicGitAdapter } from "src/adapters/IsomorphicGitAdapter";
+import { Notice, requestUrl } from "obsidian";
 
 export class IsomorphicGitService implements GitActions {
     private vaultPath: any;
     private settings: XitSettings;
-    private git: any;
-    private http: any;
-    private fs: any;
+    private readonly fs = new IsomorphicGitAdapter(this.app.vault, this.plugin);
 
     constructor(vaultPath: any, settings: XitSettings) {
         this.vaultPath = vaultPath;
         this.settings = settings;
-        
-        this.build()
     }
 
-    private build = async () => {
-        // Check if running in a browser-like environment and if Buffer is not globally available
-        if (typeof window !== 'undefined' && typeof window.Buffer === 'undefined') {
-            try {
-                const bufferModule = await import('buffer');
-                // @ts-ignore - Allow assigning to window
-                window.Buffer = bufferModule.Buffer;
-            } catch (error) {
-                console.error("Failed to load 'buffer' module dynamically:", error);
-                throw error;
-            }
-        }
+    getRepo(): {
+        fs: IsomorphicGitAdapter;
+        dir: string;
+        gitdir?: string;
+        onAuth: AuthCallback;
+        onAuthFailure: AuthFailureCallback;
+        http: HttpClient;
+    } {
+        return {
+            fs: this.fs,
+            dir: ".",
+            gitdir: this.settings.repoUrl || undefined,
+            onAuth: () => {
+                return {
+                    username: 'x-access-token',
+                    password: this.settings.githubToken,
+                };
+            },
+            onAuthFailure: async () => {
+                new Notice(
+                    "Authentication failed. Please try with different credentials"
+                );
+            },
+            http: {
+                async request({
+                    url,
+                    method,
+                    headers,
+                    body,
+                }: GitHttpRequest): Promise<GitHttpResponse> {
+                    // We can't stream yet, so collect body and set it to the ArrayBuffer
+                    // because that's what requestUrl expects
+                    let collectedBody: ArrayBuffer | undefined;
+                    if (body) {
+                        collectedBody = (await collect(body)).buffer;
+                    }
 
-        const gitModule = await import('isomorphic-git');
-        const httpModule = await import('isomorphic-git/http/web');
-        const lightningFSModule = await import('@isomorphic-git/lightning-fs');
-        
-        // Access the default exports with type assertion
-        this.git = gitModule.default;
-        this.http = httpModule.default;
-        const LightningFS = (lightningFSModule as any).default;
-        
-        this.fs = new LightningFS('obsidian-git-fs');
+                    const res = await requestUrl({
+                        url,
+                        method,
+                        headers,
+                        body: collectedBody,
+                        throw: false,
+                    });
+                    return {
+                        url,
+                        method,
+                        headers: res.headers,
+                        body: [new Uint8Array(res.arrayBuffer)],
+                        statusCode: res.status,
+                        statusMessage: res.status.toString(),
+                    };
+                },
+            },
+        };
     }
 
-    private onAuth = () => ({
-        username: 'x-access-token',
-        password: this.settings.githubToken
-    });
-    
     async clone(): Promise<void> {
+        await this.build();
         try {
             // Clear the directory first (if it exists and has files)
             try {
@@ -74,18 +102,17 @@ export class IsomorphicGitService implements GitActions {
             }
             
             // Clone the repository
-            await this.git.clone({
-                fs: this.fs,
-                http: this.http,
-                dir: this.vaultPath,
-                url: this.settings.repoUrl,
-                ref: this.settings.branchName,
-                singleBranch: true,
-                depth: 1,
-                onAuth: this.onAuth,
-                noTags: true,
-                noCheckout: false
-            });
+            await this.wrapFS(
+                this.git.clone({
+                    ...this.getRepo(),
+                    url: this.settings.repoUrl,
+                    ref: this.settings.branchName,
+                    singleBranch: true,
+                    depth: 1,
+                    noTags: true,
+                    noCheckout: false
+                })
+            );
         } catch (error) {
             console.error('Error cloning repository:', error);
             throw error;
@@ -93,52 +120,56 @@ export class IsomorphicGitService implements GitActions {
     }
 
     async sync(): Promise<void> {        
+        await this.build();
         // Fetch latest
-        await this.git.fetch({
-            fs: this.fs,
-            http: this.http,
-            dir: this.vaultPath,
-            url: this.settings.repoUrl,
-            ref: this.settings.branchName,
-            depth: 1,
-            singleBranch: true,
-            tags: false,
-            onAuth: this.onAuth
-        });
+        await this.wrapFS(
+            this.git.fetch({
+                ...this.getRepo(),
+                url: this.settings.repoUrl,
+                ref: this.settings.branchName,
+                depth: 1,
+                singleBranch: true,
+                tags: false
+            })
+        );
         
         // Get current branch 
         try {
-            await this.git.checkout({
-                fs: this.fs,
-                dir: this.vaultPath,
-                ref: this.settings.branchName,
-                force: true
-            });
+            await this.wrapFS(
+                this.git.checkout({
+                    ...this.getRepo(),
+                    ref: this.settings.branchName,
+                    force: true
+                })
+            );
         } catch (e) {
             // If checking current branch fails, force checkout
-            await this.git.checkout({
-                fs: this.fs,
-                dir: this.vaultPath,
-                ref: this.settings.branchName,
-                force: true
-            });
+            await this.wrapFS(
+                this.git.checkout({
+                    ...this.getRepo(),
+                    ref: this.settings.branchName,
+                    force: true
+                })
+            );
         }
         
         // Get latest commit from remote branch
         const remoteRef = `refs/remotes/origin/${this.settings.branchName}`;
-        const latestCommit = await this.git.resolveRef({
-            fs: this.fs,
-            dir: this.vaultPath,
-            ref: remoteRef
-        });
+        const latestCommit = await this.wrapFS(
+            this.git.resolveRef({
+                ...this.getRepo(),
+                ref: remoteRef
+            })
+        );
         
         // Reset to latest commit (equivalent to reset --hard)
-        await this.git.reset({
-            fs: this.fs,
-            dir: this.vaultPath,
-            ref: latestCommit,
-            hard: true
-        });
+        await this.wrapFS(
+            this.git.reset({
+                ...this.getRepo(),
+                ref: latestCommit,
+                hard: true
+            })
+        );
         
         // Clean untracked files (similar to git clean -fd)
         const statusMatrix = await this.git.statusMatrix({
@@ -170,50 +201,83 @@ export class IsomorphicGitService implements GitActions {
 
     async push(): Promise<void> {
         try {
-            // Add all changes
-            await this.git.add({
-                fs: this.fs,
-                dir: this.vaultPath,
-                filepath: '.'
-            });
-            
-            // Create commit
-            const commitMessage = `vault sync ${new Date().toISOString()}`;
-            
-            // Get status to check if there are changes to commit
-            const status = await this.git.status({
-                fs: this.fs,
-                dir: this.vaultPath,
-                filepath: '.'
-            });
-            
-            if (status !== 'unmodified') {
-                // Create commit with message
-                await this.git.commit({
-                    fs: this.fs,
-                    dir: this.vaultPath,
-                    message: commitMessage,
-                    author: {
-                        name: 'Obsidian Git',
-                        email: 'obsidian@example.com'
-                    }
-                });
-                
-                // Push to remote
-                await this.git.push({
-                    fs: this.fs,
-                    http: this.http,
-                    dir: this.vaultPath,
-                    remote: 'origin',
-                    ref: this.settings.branchName,
-                    onAuth: this.onAuth
-                });
-            } else {
-                console.log('No changes to commit');
-            }
+            await this.wrapFS(
+                git.push({
+                    ...this.getRepo()
+                })
+            );
         } catch (error) {
-            console.error('Error pushing changes:', error);
             throw error;
         }
     }
+
+    async wrapFS<T>(call: Promise<T>): Promise<T> {
+        try {
+            const res = await call;
+            await this.fs.saveAndClear();
+            return res;
+        } catch (error) {
+            await this.fs.saveAndClear();
+            throw error;
+        }
+    }
+}
+
+function fromValue(value: any) {
+    let queue = [value];
+    return {
+        next() {
+            return Promise.resolve({
+                done: queue.length === 0,
+                value: queue.pop(),
+            });
+        },
+        return() {
+            queue = [];
+            return {};
+        },
+        [Symbol.asyncIterator]() {
+            return this;
+        },
+    };
+}
+
+function getIterator(iterable: any) {
+    if (iterable[Symbol.asyncIterator]) {
+        return iterable[Symbol.asyncIterator]();
+    }
+    if (iterable[Symbol.iterator]) {
+        return iterable[Symbol.iterator]();
+    }
+    if (iterable.next) {
+        return iterable;
+    }
+    return fromValue(iterable);
+}
+
+async function forAwait(iterable: any, cb: any) {
+    const iter = getIterator(iterable);
+    while (true) {
+        const { value, done } = await iter.next();
+        if (value) await cb(value);
+        if (done) break;
+    }
+    if (iter.return) iter.return();
+}
+
+async function collect(iterable: any): Promise<Uint8Array> {
+    let size = 0;
+    const buffers: Uint8Array[] = [];
+    // This will be easier once `for await ... of` loops are available.
+    await forAwait(iterable, (value: any) => {
+        buffers.push(value);
+        size += value.byteLength;
+    });
+    const result = new Uint8Array(size);
+    let nextIndex = 0;
+    for (const buffer of buffers) {
+        result.set(buffer, nextIndex);
+        nextIndex += buffer.byteLength;
+    }
+    return result;
 }
