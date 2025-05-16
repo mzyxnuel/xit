@@ -26,7 +26,7 @@ export class GitController {
     }
 
     private service(): GitActions {
-        return Platform.isDesktopApp 
+        return Platform.isDesktop
             ? new GitService(this.vaultPath, this.settings) 
             : new IsomorphicGitService(this.vaultPath, this.settings);
     }
@@ -65,7 +65,7 @@ export class GitController {
         try {
             this.guard();
 
-            const canNotice = (Platform.isMobileApp && isManual) || Platform.isDesktopApp
+            const canNotice = (Platform.isMobile && isManual) || Platform.isDesktop
 
             if (canNotice) {
                 new Notice('Pushing to Git repository...');    
