@@ -15,17 +15,17 @@ export class GitService implements GitActions {
 
     async clone(): Promise<void> {
         try {
-                // Set Git credentials if token is provided
-                const authUrl = this.settings.githubToken 
-                    ? this.settings.repoUrl.replace('https://', `https://x-access-token:${this.settings.githubToken}@`)
-                    : this.settings.repoUrl;
-                
-                // execute git clone command
-                await this.exec(`cd "${this.vaultPath}" && git init`);
-                await this.exec(`cd "${this.vaultPath}" && git remote add origin ${authUrl}`);
-                await this.exec(`cd "${this.vaultPath}" && git fetch --all`);
-                await this.exec(`cd "${this.vaultPath}" && git reset --hard origin/${this.settings.branchName}`);
-                await this.exec(`cd "${this.vaultPath}" && git clean -fd`); // Remove untracked files
+            // Set Git credentials if token is provided
+            const authUrl = this.settings.githubToken 
+                ? this.settings.repoUrl.replace('https://', `https://x-access-token:${this.settings.githubToken}@`)
+                : this.settings.repoUrl;
+            
+            // execute git clone command
+            await this.exec(`cd "${this.vaultPath}" && git init`);
+            await this.exec(`cd "${this.vaultPath}" && git remote add origin ${authUrl}`);
+            await this.exec(`cd "${this.vaultPath}" && git fetch --all`);
+            await this.exec(`cd "${this.vaultPath}" && git reset --hard origin/${this.settings.branchName}`);
+            await this.exec(`cd "${this.vaultPath}" && git clean -fd`); // Remove untracked files
         } catch (error) {
             console.error('Error cloning git repository:', error);
             new Notice('Error cloning git repository: ' + error.message);

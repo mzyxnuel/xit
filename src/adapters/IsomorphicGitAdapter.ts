@@ -10,7 +10,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { DataAdapter, Vault } from "obsidian";
 import { normalizePath, TFile } from "obsidian";
-import type ObsidianGit from "../main";
 
 export class IsomorphicGitAdapter {
     promises: any = {};
@@ -23,7 +22,6 @@ export class IsomorphicGitAdapter {
 
     constructor(
         vault: Vault,
-        private readonly plugin: ObsidianGit
     ) {
         this.adapter = vault.adapter;
         this.vault = vault;

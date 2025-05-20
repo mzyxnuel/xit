@@ -1,4 +1,4 @@
-import { Notice, Platform } from "obsidian";
+import { Notice, Platform, Vault } from "obsidian";
 import { XitSettings } from "../types/XitSettings.types";
 import { GitService } from "../services/GitService";
 import { IsomorphicGitService } from "../services/IsomorphicGitService";
@@ -6,11 +6,11 @@ import { GitActions } from "src/types/GitActions.types";
 
 export class GitController {
     private settings: XitSettings;
-    private vaultPath: any;
+    private vault: Vault;
 
-    constructor(vaultPath: any, settings: XitSettings) {
+    constructor(vault: Vault, settings: XitSettings) {
         this.settings = settings;
-        this.vaultPath = vaultPath;
+        this.vault = vault;
     }
 
     private guard = (): void => {
@@ -27,8 +27,8 @@ export class GitController {
 
     private service(): GitActions {
         return Platform.isDesktop
-            ? new GitService(this.vaultPath, this.settings) 
-            : new IsomorphicGitService(this.vaultPath, this.settings);
+            ? new GitService((this.vault.adapter as any).basePath, this.settings) 
+            : new IsomorphicGitService(this.vault, this.settings);
     }
 
     async clone() {

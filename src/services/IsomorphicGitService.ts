@@ -3,16 +3,15 @@ import { GitActions } from "../types/GitActions.types";
 import git from 'isomorphic-git';
 import type { AuthCallback, AuthFailureCallback, GitHttpRequest, GitHttpResponse, HttpClient } from "isomorphic-git";
 import { IsomorphicGitAdapter } from "src/adapters/IsomorphicGitAdapter";
-import { Notice, requestUrl } from "obsidian";
+import { Notice, requestUrl, Vault } from "obsidian";
 
 export class IsomorphicGitService implements GitActions {
-    private vaultPath: any;
     private settings: XitSettings;
-    private readonly fs = new IsomorphicGitAdapter(this.app.vault, this.plugin);
+    private readonly fs: IsomorphicGitAdapter;
 
-    constructor(vaultPath: any, settings: XitSettings) {
-        this.vaultPath = vaultPath;
+    constructor(vault: Vault, settings: XitSettings) {
         this.settings = settings;
+        this.fs = new IsomorphicGitAdapter(vault);
     }
 
     getRepo(): {
@@ -73,8 +72,7 @@ export class IsomorphicGitService implements GitActions {
     }
 
     async clone(): Promise<void> {
-        await this.build();
-        try {
+        /*try {
             // Clear the directory first (if it exists and has files)
             try {
                 const files = await this.fs.promises.readdir(this.vaultPath);
@@ -116,12 +114,11 @@ export class IsomorphicGitService implements GitActions {
         } catch (error) {
             console.error('Error cloning repository:', error);
             throw error;
-        }
+        }*/
     }
 
     async sync(): Promise<void> {        
-        await this.build();
-        // Fetch latest
+        /* Fetch latest
         await this.wrapFS(
             this.git.fetch({
                 ...this.getRepo(),
@@ -196,7 +193,7 @@ export class IsomorphicGitService implements GitActions {
                     console.log(`Could not remove untracked file: ${filepath}`, e);
                 }
             }
-        }
+        }*/
     }
 
     async push(): Promise<void> {

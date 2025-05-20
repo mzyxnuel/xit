@@ -10,7 +10,7 @@ export default class Xit extends Plugin {
     async onload() {
         try {
             await this.loadSettings();
-            this.git = new GitController((this.app.vault.adapter as any).basePath, this.settings);
+            this.git = new GitController(this.app.vault, this.settings);
     
             // Sync git repository at startup if enabled
             this.git.sync();
