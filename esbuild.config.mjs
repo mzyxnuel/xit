@@ -17,6 +17,7 @@ const context = await esbuild.context({
 	},
 	entryPoints: ["./src/main.ts"],
 	bundle: true,
+	// Exclude Node built-ins except buffer so we can bundle Buffer polyfill
 	external: [
 		"obsidian",
 		"electron",
@@ -31,7 +32,8 @@ const context = await esbuild.context({
 		"@lezer/common",
 		"@lezer/highlight",
 		"@lezer/lr",
-		...builtins],
+		// bundle buffer package, so filter out from externals
+		...builtins.filter((m) => m !== 'buffer')],
 	format: "cjs",
 	target: "es2018",
 	logLevel: "info",

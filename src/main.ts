@@ -1,3 +1,4 @@
+import './polyfills/buffer'; // Load Buffer polyfill for environments lacking Node globals
 import { Notice, Plugin } from 'obsidian';
 import { GitController } from './controllers/GitController';
 import { DEFAULT_SETTINGS, XitSettings } from './types/XitSettings.types';
