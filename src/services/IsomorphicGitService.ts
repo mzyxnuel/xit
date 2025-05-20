@@ -271,10 +271,6 @@ export class IsomorphicGitService implements GitActions {
                                 return null;
                             }
                         }
-                        // Late filter against file names
-                        // if (filter) {
-                        //     if (!filter(filepath)) return;
-                        // }
 
                         const [workdirType, stageType] = await Promise.all([
                             workdir && workdir.type(),
