@@ -4,10 +4,12 @@ import git from 'isomorphic-git';
 import type { AuthCallback, AuthFailureCallback, GitHttpRequest, GitHttpResponse, HttpClient } from "isomorphic-git";
 import { IsomorphicGitAdapter } from "src/adapters/IsomorphicGitAdapter";
 import { Notice, requestUrl, Vault } from "obsidian";
+import { UnstagedFile } from "src/types/Git.types";
 
 export class IsomorphicGitService implements GitActions {
     private settings: XitSettings;
     private readonly fs: IsomorphicGitAdapter;
+    private readonly noticeLength = 999_999;
 
     constructor(vault: Vault, settings: XitSettings) {
         this.settings = settings;
@@ -201,11 +203,154 @@ export class IsomorphicGitService implements GitActions {
 
     async push(): Promise<void> {
         try {
+            this.commitAll();
+
             await this.wrapFS(
                 git.push({
                     ...this.getRepo()
                 })
             );
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async commitAll(): Promise<number | undefined> {
+        try {
+            await this.stageAll();
+            return this.commit();
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async stageAll(): Promise<void> {
+        try {
+            const filesToStage = await this.getUnstagedFiles();
+            await Promise.all(
+                filesToStage.map(({ path, deleted }) =>
+                    deleted
+                        ? git.remove({ ...this.getRepo(), filepath: path })
+                        : this.wrapFS(
+                                git.add({ ...this.getRepo(), filepath: path })
+                            )
+                )
+            );
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async getUnstagedFiles(): Promise<UnstagedFile[]> {
+        let notice: Notice | undefined;
+        const timeout = window.setTimeout(() => {
+            notice = new Notice(
+                "This takes longer: Getting status",
+                this.noticeLength
+            );
+        }, 20000);
+        try {
+            const repo = this.getRepo();
+            const res = await this.wrapFS<Promise<UnstagedFile[]>>(
+                //Modified from `git.statusMatrix`
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+                git.walk({
+                    ...repo,
+                    trees: [git.WORKDIR(), git.STAGE()],
+                    map: async function (
+                        filepath,
+                        [workdir, stage]
+                    ): Promise<UnstagedFile | null | undefined> {
+                        // Ignore ignored files, but only if they are not already tracked.
+                        if (!stage && workdir) {
+                            const isIgnored = await git.isIgnored({
+                                ...repo,
+                                filepath,
+                            });
+                            if (isIgnored) {
+                                return null;
+                            }
+                        }
+                        // Late filter against file names
+                        // if (filter) {
+                        //     if (!filter(filepath)) return;
+                        // }
+
+                        const [workdirType, stageType] = await Promise.all([
+                            workdir && workdir.type(),
+                            stage && stage.type(),
+                        ]);
+
+                        const isBlob = [workdirType, stageType].includes(
+                            "blob"
+                        );
+
+                        // For now, bail on directories unless the file is also a blob in another tree
+                        if (
+                            (workdirType === "tree" ||
+                                workdirType === "special") &&
+                            !isBlob
+                        )
+                            return;
+
+                        if (stageType === "commit") return null;
+                        if (
+                            (stageType === "tree" || stageType === "special") &&
+                            !isBlob
+                        )
+                            return;
+
+                        // Figure out the oids for files, using the staged oid for the working dir oid if the stats match.
+                        const stageOid =
+                            stageType === "blob"
+                                ? await stage!.oid()
+                                : undefined;
+                        let workdirOid;
+                        if (workdirType === "blob" && stageType !== "blob") {
+                            // We don't actually NEED the sha. Any sha will do
+                            workdirOid = "42";
+                        } else if (workdirType === "blob") {
+                            workdirOid = await workdir!.oid();
+                        }
+                        if (!workdirOid) {
+                            return {
+                                path: filepath,
+                                deleted: true,
+                            };
+                        }
+
+                        if (workdirOid !== stageOid) {
+                            return {
+                                path: filepath,
+                                deleted: false,
+                            };
+                        }
+                        return null;
+                    },
+                })
+            );
+            window.clearTimeout(timeout);
+            notice?.hide();
+            return res;
+        } catch (error) {
+            window.clearTimeout(timeout);
+            notice?.hide();
+            throw error;
+        }
+    }
+
+    async commit(): Promise<undefined> {
+        try {
+            let parent: string[] | undefined = undefined;
+
+            await this.wrapFS(
+                git.commit({
+                    ...this.getRepo(),
+                    message: `vault mobile sync ${new Date().toISOString()}`,
+                    parent: parent,
+                })
+            );
+            return;
         } catch (error) {
             throw error;
         }
