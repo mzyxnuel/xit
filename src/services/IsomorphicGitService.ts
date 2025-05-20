@@ -62,7 +62,10 @@ export class IsomorphicGitService implements GitActions {
                         url,
                         method,
                         headers: res.headers,
-                        body: [new Uint8Array(res.arrayBuffer)],
+                        // Wrap the single Uint8Array in an async iterable iterator as required by GitHttpResponse.body
+                        body: (async function*() {
+                            yield new Uint8Array(res.arrayBuffer);
+                        })(),
                         statusCode: res.status,
                         statusMessage: res.status.toString(),
                     };
