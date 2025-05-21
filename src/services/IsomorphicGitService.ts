@@ -27,6 +27,7 @@ export class IsomorphicGitService implements GitActions {
         return {
             fs: this.fs,
             dir: ".",
+            gitdir: this.settings.repoUrl || undefined,
             onAuth: () => {
                 return {
                     username: 'x-access-token',
@@ -225,14 +226,25 @@ export class IsomorphicGitService implements GitActions {
 
     async stageAll(): Promise<void> {
         try {
-            const filesToStage = await this.getUnstagedFiles();
+            const repo = this.getRepo();
+            // Get all changed files (including new untracked)
+            const rawFiles = await this.getUnstagedFiles();
+            const filesToStage: UnstagedFile[] = [];
+            // Filter only tracked modified or deleted files
+            for (const { path, deleted } of rawFiles) {
+                const status = await git.status({ ...repo, filepath: path });
+                if (status === 'modified' || status === 'deleted') {
+                    filesToStage.push({ path, deleted });
+                }
+            }
+            // Stage filtered files
             await Promise.all(
                 filesToStage.map(({ path, deleted }) =>
                     deleted
-                        ? git.remove({ ...this.getRepo(), filepath: path })
+                        ? git.remove({ ...repo, filepath: path })
                         : this.wrapFS(
-                                git.add({ ...this.getRepo(), filepath: path })
-                            )
+                              git.add({ ...repo, filepath: path })
+                          )
                 )
             );
         } catch (error) {
