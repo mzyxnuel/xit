@@ -27,7 +27,6 @@ export class IsomorphicGitService implements GitActions {
         return {
             fs: this.fs,
             dir: ".",
-            // Omit gitdir: let isomorphic-git use default ".git" directory under `dir`
             onAuth: () => {
                 return {
                     username: 'x-access-token',
